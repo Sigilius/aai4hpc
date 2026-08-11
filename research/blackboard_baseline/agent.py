@@ -4,8 +4,10 @@ research/blackboard_baseline/agent.py
 Blackboard MAS Baseline  —  SIGDIAL 2026 ablation study.
 
 Architecture (Panel B from the paper):
-  - Same 7 roles as the Full MAS (gateway, data_explorer, sql, doc, pa,
-    synthesizer, reflector).
+  - Runs the SAME agent implementations as the Full MAS (agents/), reached
+    through research/shared/mas_agents.py: sql, pa, doc, synthesizer,
+    reflector, data_explorer. Nothing about the agents differs.
+  - Same tools and same base model.
   - Agents communicate ONLY through a shared mutable dict (the Blackboard).
   - No causal ordering, no typed DA schema, no UncertaintyFlag fields.
   - Concerns are embedded as plain text in each agent's result slot.

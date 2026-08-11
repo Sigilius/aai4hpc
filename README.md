@@ -6,8 +6,10 @@ against the Fugaku job telemetry export (25.8M records).
 
 ## Configurations
 
-All five run the **same specialist agent implementations** (`agents/`). Only the
-substrate carrying results between agents differs — that is the ablation
+All five run the **same specialist agent implementations** (`agents/`) — the same
+SQL, PA, Doc, DataExplorer, Synthesizer and Reflector code, with the same
+prompts, tools and base model. No configuration has an agent of its own. Only
+the substrate carrying results between agents differs, and that is the ablation
 variable.
 
 | Configuration | Substrate | Typed fields |

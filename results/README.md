@@ -2,13 +2,19 @@
 
 ## Provenance
 
-These runs predate the shared-agent rewiring in `research/shared/mas_agents.py`.
-At the time they were produced, each baseline still used its own ad-hoc agent
-implementations (a ~50-line SQL function for Blackboard against the MAS's
-770-line SQLAgent), so the reported baseline numbers confound agent
-implementation with communication architecture. A targeted probe showed the
-MAS SQL agent alone closed 100% of the fact-recall gap on the five queries where
+**The code in this repository and the numbers in this folder do not yet match.**
+
+Every configuration now runs the same agent implementations (`agents/`, reached
+through `research/shared/mas_agents.py`). These result files predate that
+change: when they were produced, each baseline still ran a separate, much
+smaller agent of its own — a ~50-line SQL function for Blackboard against the
+MAS's 770-line SQLAgent — so the baseline numbers below confound agent
+implementation with communication architecture. A targeted probe showed the MAS
+SQL agent alone closed 100% of the fact-recall gap on the five queries where
 that gap was largest.
+
+Re-running the four baselines against the current code is the outstanding work;
+until then, treat these baseline figures as lower bounds.
 
 Re-running the four baselines with the shared agents is the outstanding work;
 the numbers below will move when that lands.

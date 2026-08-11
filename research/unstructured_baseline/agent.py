@@ -4,8 +4,9 @@ research/unstructured_baseline/agent.py
 Unstructured MAS Baseline  —  SIGDIAL 2026 ablation study.
 
 Architecture (Panel C from the paper):
-  - Same 7 roles as the Full MAS (gateway, data_explorer, sql, doc, pa,
-    synthesizer, reflector).
+  - Runs the SAME agent implementations as the Full MAS (agents/), reached
+    through research/shared/mas_agents.py: sql, pa, doc, synthesizer,
+    reflector, data_explorer. Nothing about the agents differs.
   - Same tools: run_sql, predict_job, rag_search, column profiling.
   - Causal conversation log: append-only, temporally ordered.
   - Agents communicate via NATURAL LANGUAGE messages in the log — they can

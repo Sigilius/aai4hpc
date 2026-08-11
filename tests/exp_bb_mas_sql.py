@@ -5,13 +5,18 @@ Ablation probe: swap the MAS SQLAgent into the Blackboard system.
 
 Why
 ---
-The paper states that prompts, agent roles and tool implementations are
-identical across configurations. They are not: the MAS SQL role is
-agents/sql_agent.py (770 lines, 9 LLM call sites — sub-question extraction,
-delegation gates, profiling, generation, sufficiency check), while the
-Blackboard SQL role is a 50-line function with a single LLM call. So the
-MAS-vs-Blackboard fact-recall gap confounds two things: the communication
-architecture (the intended variable) and the SQL agent implementation.
+HISTORICAL. This probe measured a confound that has since been removed: every
+configuration now runs the shared agents from agents/ via
+research/shared/mas_agents.py, so this experiment can no longer be reproduced
+against the current tree. It is retained because its result motivated that
+change.
+
+At the time it ran, the MAS SQL role was agents/sql_agent.py (770 lines, 9 LLM
+call sites — sub-question extraction, delegation gates, profiling, generation,
+sufficiency check) while the Blackboard SQL role was a 50-line function with a
+single LLM call. The MAS-vs-Blackboard fact-recall gap therefore confounded the
+communication architecture (the intended variable) with the SQL agent
+implementation.
 
 This isolates them. Blackboard keeps its architecture — the mutable dict, the
 orchestrator-fixed call order, no typed messages, no uncertainty propagation —

@@ -4,8 +4,10 @@ research/unstructured_a2a_baseline/agent.py
 Natural-Language A2A MAS Baseline  —  SIGDIAL 2026 ablation study.
 
 Architecture (Panel D from the paper):
-  - Same 6 roles as Full MAS: data_explorer, sql_agent, pa_agent, doc_agent,
-    synthesizer, reflector.
+  - Runs the SAME agent implementations as the Full MAS (agents/), reached
+    through research/shared/mas_agents.py. The PA agent additionally keeps a
+    real peer channel to sql_agent and doc_agent, wrapped so every reply is a
+    bare INFORM with no flags. Nothing about the agents differs.
   - TRUE directed A2A communication: PA explicitly calls ask_peer("sql_agent", question)
     mid-execution and receives an immediate synchronous response.
   - Shared causal conversation log records all A2A message exchanges.
