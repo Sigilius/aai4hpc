@@ -1,0 +1,25 @@
+{
+  "s1": {
+    "auc": 0.7708,
+    "brier": 0.0961,
+    "threshold": 0.35,
+    "precision": 0.4853,
+    "recall": 0.4341,
+    "f1": 0.4582,
+    "slow_recall": 0.4855
+  },
+  "s2": {
+    "auc": 0.7983,
+    "brier": 0.2121,
+    "threshold": 0.26,
+    "f1_exp": 0.7712
+  },
+  "s3": {
+    "mae_log": 0.9494,
+    "mape_pct": 21.22
+  },
+  "s4": {
+    "mae_log": 1.159,
+    "filtered_mape": 14.66
+  }
+}

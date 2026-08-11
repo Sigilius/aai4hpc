@@ -8,10 +8,12 @@ venv/
 __pycache__/
 *.pyc
 logs/
-data/prepared/
-models/
-*.parquet
 *.duckdb
 *.db
-*.npy
+
+# Predictor weights and retrieval assets are tracked via Git LFS
+# (see .gitattributes); the exclusions below would otherwise drop them.
 .DS_Store
+
+# Submission working documents — kept local, not published
+AD_AE_ANSWERS.txt

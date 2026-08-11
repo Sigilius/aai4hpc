@@ -16,22 +16,37 @@ sequential, about **25 minutes** if you run the configurations in parallel.
 
 ## 1. What you need first
 
-Three things are not in this repository and cannot be — they are large,
-licensed, or secret.
+Two things are not in this repository: the telemetry export and an LLM endpoint.
 
 | | What | Where it goes |
 |---|---|---|
 | **Fugaku telemetry** | the F-Data job export, parquet, 25.8M rows | `FUGAKU_DATA_PATH` |
-| **Predictor artifacts** | pickled LightGBM models for the PA agent | `MODELS_PATH`, `PREPARED_PATH` |
 | **An LLM endpoint** | Azure OpenAI (or OpenAI-compatible) with `gpt-4o` and `gpt-4o-mini` | `AZURE_OPENAI_*` |
 
 Without the telemetry the SQL agent falls back to a small sample database and
 every fact-recall number will be wrong. `make check` catches that case.
 
-Documentation retrieval needs no vector database — it is BM25 over cached numpy
-embeddings — but it does need two asset files, `data/doc_embeddings.npy` and the
-chunked manual corpus. Without them DocAgent fails and every documentation
-sub-question silently scores zero.
+**Everything else ships with the repository via Git LFS** — the PA agent's
+LightGBM weights (`models/`, 567 MB) and DocAgent's retrieval assets
+(`data/doc_embeddings.npy`, `data 2/all_chunks.json`). Retrieval is BM25 over
+cached embeddings, so there is no vector database to stand up.
+
+You need `git-lfs` installed *before* cloning, or the large files arrive as
+text pointers:
+
+```bash
+git lfs install
+git clone https://github.com/Sigilius/aai4hpc
+```
+
+Already cloned without it? `git lfs install && git lfs pull` fixes it.
+
+> **LFS bandwidth.** The payload is 567 MB, of which `models/jnam_emb.pkl` is
+> 534 MB — a job-name embedding lookup. GitHub's free LFS tier allows 1 GB of
+> bandwidth per month, so roughly one full clone. If you only need to verify the
+> scoring pipeline against the bundled reference logs, you do not need the
+> weights at all: `git lfs install --skip-smudge` before cloning, then
+> `make score && make tables`.
 
 ## 2. Setup
 
