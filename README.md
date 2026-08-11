@@ -49,13 +49,16 @@ matching; without that, a correct refusal split across a line break scores zero.
 ## Running
 
 ```bash
-cp .env.example .env          # add AZURE_OPENAI_API_KEY, FUGAKU_DATA_PATH, MODELS_PATH
-pip install -r requirements.txt
-
-python3 tests/run_metered.py mas all          # also: blackboard | unstructured | a2a | single
-python3 score_run.py logs/metered_mas.log "Structured MAS" results/json/mas.json --mas
-python3 build_results_sheet.py
+make setup                 # virtualenv + pinned dependencies
+cp .env.example .env       # fill in credentials and data paths
+make check                 # verify data, models and LLM endpoint
+make all                   # run all five, score, build tables and traces
 ```
+
+`./run.sh` does the same without make; `./run.sh --parallel` runs the five
+configurations at once. See **[REPRODUCING.md](REPRODUCING.md)** for what you
+need to supply, what each step produces, and the one configuration flag that
+changes the numbers.
 
 Instrumentation (`research/shared/usage_meter.py`) patches the OpenAI SDK at one
 point, so tokens, LLM calls and turns are counted identically for every

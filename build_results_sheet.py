@@ -30,8 +30,8 @@ import re
 import statistics as st
 
 _ROOT = os.path.dirname(os.path.abspath(__file__))
-OUT_X = os.path.join(_ROOT, "sigdial_json_repro", "results_tables.xlsx")
-OUT_D = os.path.join(_ROOT, "sigdial_json_repro")
+OUT_X = os.path.join(_ROOT, "results", "tables", "results_tables.xlsx")
+OUT_D = os.path.join(_ROOT, "results", "tables")
 
 INDEP = set([f"N{i}" for i in range(1, 36)] + [f"D{i}" for i in range(1, 6)])
 MISSING_DETAIL = {
@@ -45,11 +45,11 @@ DA_VOCAB = ["USER_QUERY", "REQUEST", "INFORM", "CLARIFY", "DELEGATE", "CAVEAT",
             "VALIDATE", "CHALLENGE", "CONFIRM", "REJECT", "SYNTHESIZE", "TERMINATE"]
 
 SYSTEMS = [
-    ("Structured MAS",           "mas_4o.json",         "usage_mas_4o.jsonl",           "metered_mas_4o.log"),
-    ("Unstructured MAS",         "una2a_metered.json",  "usage_a2a.jsonl",              "metered_a2a.log"),
-    ("Blackboard MAS",           "bb_metered.json",     "usage_blackboard.jsonl",       "metered_blackboard.log"),
-    ("Unstr.-Blackboard MAS",    "unbb_eq.json",        "usage_unstructured_eq.jsonl",  "metered_unbb_eq.log"),
-    ("Single Agent",             "sa_metered.json",     "usage_single.jsonl",           "metered_single.log"),
+    ("Structured MAS",        "mas.json",                 "usage_mas.jsonl",          "metered_mas.log"),
+    ("Unstructured MAS",      "unstructured.json",        "usage_a2a.jsonl",          "metered_a2a.log"),
+    ("Blackboard MAS",        "blackboard.json",                  "usage_blackboard.jsonl",   "metered_blackboard.log"),
+    ("Unstr.-Blackboard MAS", "unstructured_no_a2a.json", "usage_unstructured.jsonl", "metered_unstructured.log"),
+    ("Single Agent",          "sa.json",                  "usage_single.jsonl",       "metered_single.log"),
 ]
 
 _DA = re.compile(r"\bDA=([A-Z_]+)\b")
@@ -95,7 +95,7 @@ def pct(c, t):
 def main():
     S, U, W, H = {}, {}, {}, {}
     for name, sf, uf, lf in SYSTEMS:
-        p = os.path.join(_ROOT, "sigdial_json_repro", sf)
+        p = os.path.join(_ROOT, "results", "json", sf)
         if not os.path.exists(p):
             print(f"  missing {sf}; skipping {name}")
             continue
@@ -201,6 +201,7 @@ def main():
     # ── write ────────────────────────────────────────────────────────────────
     sheets = [("FR_UAA", h1, t1), ("Turns_Cost", h2, t2), ("Trap_Subtype", h3, t3),
               ("DA_Distribution", h4, t4), ("per_query", h5, t5)]
+    os.makedirs(OUT_D, exist_ok=True)
     for nm, h, rows in sheets:
         with open(os.path.join(OUT_D, f"{nm.lower()}.csv"), "w", newline="", encoding="utf-8") as fh:
             w = csv.writer(fh); w.writerow(h); w.writerows(rows)

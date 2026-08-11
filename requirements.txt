@@ -1,6 +1,24 @@
-openai>=2.0.0
-pydantic>=2.7.0
-duckdb>=1.0.0
-python-dotenv>=1.0.0
-rich>=13.7.0
-aiofiles>=23.2.1
+# Pinned to the versions the reported runs used. The predictor artifacts are
+# pickled sklearn/lightgbm models — unpickling under different major versions
+# will fail or warn, so keep these pins unless you retrain.
+
+openai==2.53.0
+pydantic==2.13.4
+python-dotenv==1.2.2
+rich==15.0.0
+aiofiles==25.1.0
+
+# Telemetry access
+duckdb==1.5.5
+pandas==2.3.3
+numpy==2.2.6
+
+# Predictive-analytics agent (loads pickled models)
+scikit-learn==1.7.2
+lightgbm==4.6.0
+
+# Documentation retrieval (BM25 + cached numpy embeddings; no vector DB needed)
+rank-bm25==0.2.2
+
+# Results workbook
+openpyxl==3.1.5
