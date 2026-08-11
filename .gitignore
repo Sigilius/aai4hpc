@@ -1,0 +1,17 @@
+# Secrets — never commit
+.env
+*.key
+*.pem
+
+.venv/
+venv/
+__pycache__/
+*.pyc
+logs/
+data/prepared/
+models/
+*.parquet
+*.duckdb
+*.db
+*.npy
+.DS_Store

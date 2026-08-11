@@ -1,0 +1,6 @@
+System,n_facts,n_facts_ind,n_facts_dep,n_traps,n_traps_ind,n_traps_dep,facts_recalled,traps_acked,llm_calls,turns,tokens,tokens/call
+MAS,119,92,27,25,12,13,86,23,921,462,1330658,1445
+UNMAS,119,92,27,25,12,13,71,14,649,360,968543,1492
+BB,119,92,27,25,12,13,43,13,309,299,321505,1040
+UNBB,119,92,27,25,12,13,54,15,477,322,593817,1245
+SA,119,92,27,25,12,13,100,6,174,174,722411,4152

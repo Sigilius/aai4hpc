@@ -1,0 +1,6 @@
+System,Turn range,Mean turns,Mean tokens,Mean LLM calls,Mean wall-clock (s),Median wall-clock (s)
+Structured MAS,8–16,12.82,33137,20.9,25.8,23.7
+Unstructured MAS,5–7,6.55,17610,11.8,19.2,19.2
+Blackboard MAS,4–6,5.44,5846,5.6,12.6,12.2
+Unstr.-Blackboard MAS,5–7,5.85,10797,8.7,13.7,12.7
+Single Agent,2–7,3.16,13135,3.2,7.4,6.9

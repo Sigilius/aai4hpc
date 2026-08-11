@@ -1,0 +1,6 @@
+Config,Schema-absence (20),Missing-detail (5),Total
+Structured MAS,18 (90%),5 (100%),23/25 = 92%
+Unstructured MAS,16 (80%),4 (80%),20/25 = 80%
+Blackboard MAS,11 (55%),4 (80%),15/25 = 60%
+Unstr.-Blackboard MAS,14 (70%),4 (80%),18/25 = 72%
+Single Agent,4 (20%),4 (80%),8/25 = 32%

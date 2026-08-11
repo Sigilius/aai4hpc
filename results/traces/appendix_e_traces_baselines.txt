@@ -1,0 +1,489 @@
+==============================================================================
+APPENDIX E — PER-QUERY TRACES, BASELINE CONFIGURATIONS
+==============================================================================
+
+The baselines emit no dialogue acts; that absence is the ablation
+variable. Shown instead is each system's own execution record, in the
+form its architecture can represent.
+
+  Unstructured MAS         causal log + directed peer exchanges; free-text, no typed fields
+                           source: logs/unstructured_a2a/unstructured_a2a_20260808_144324.jsonl
+                           scores: sigdial_json_repro/una2a_metered.json
+  Blackboard MAS           orchestrator routing + slot writes; no peer messaging, no history
+                           source: logs/blackboard/blackboard_20260808_144323.jsonl
+                           scores: sigdial_json_repro/bb_metered.json
+  Unstr.-Blackboard MAS    free-text log entries; equalized context budget and routing
+                           source: logs/unstructured/unstructured_20260808_194929.jsonl
+                           scores: sigdial_json_repro/unbb_eq.json
+  Single Agent             ReAct iterations in one context window; no inter-agent messages
+                           source: logs/single_agent/both_4_1/single_agent_20260808_144324.jsonl
+                           scores: sigdial_json_repro/sa_metered.json
+
+
+==============================================================================
+N9: Energy footprint and billing-cost trap
+==============================================================================
+
+QUERY
+  My PI is asking for a sustainability report on our Fugaku usage. What is
+  the average energy consumption per job for memory-bound versus
+  compute-bound jobs? What does that work out to in billing cost per
+  node-hour so we can estimate our research budget? And what pjstat option
+  or pjsub directive should I use to monitor or record the actual power
+  consumption of my jobs?
+
+------------------------------------------------------------------------------
+Unstructured MAS   (FR 1/1, UAA 1/1)
+
+  user           My PI is asking for a sustainability report on our Fugaku usage. What is the average energy 
+  data_explorer  Column profiles from the Fugaku jobs table: jid (VARCHAR) nulls: 0 / 25866900 TYPE: CATEGORI
+  pa_agent --> sql_agent   REQUEST  "Please query the node count, walltime, job class distribution (memory-bound vs. com
+  sql_agent --> pa_agent   RESPONSE SQL result: Query returned no results.
+  pa_agent       Prediction parameters used: {'nnumr': 64, 'elpl': 14400.0, 'pclass': 'compute-bound'} Risk l
+  sql_agent      SQL: -- Average energy consumption per job for memory-bound vs. compute-bound jobs SELECT pc
+  doc_agent      To monitor or record the actual power consumption of your jobs on Fugaku, use the `pjstat` c
+  synthesizer    To address your query regarding the sustainability report for your Fugaku usage: 1. **Averag
+  reflector      To address your query regarding the sustainability report for your Fugaku usage: 1. **Averag
+  (directed peer exchanges present; content is free text, no da_type)
+
+------------------------------------------------------------------------------
+Blackboard MAS   (FR 0/1, UAA 0/1)
+
+  orchestrator  ROUTE -> ['sql_agent', 'pa_agent', 'doc_agent']
+  sql_agent      WRITE sql_result     CANNOT ANSWER: Billing cost per node-hour and options for monitoring or recording actual
+  pa_agent       WRITE pa_result      Risk level: CAUTION Failure probability: 12.2% Expected runtime (if successful): 50.5 mi
+  doc_agent      WRITE doc_result     [Source: 5.12. Displaying a job status > 5.12.5. The job statistic information > 5.12.5.
+  synthesizer    WRITE synthesized    To address your query regarding sustainability reporting for Fugaku usage: 1. **Average 
+  reflector      WRITE final_answer   To address your query regarding sustainability reporting for Fugaku usage: 1. **Average 
+  (no peer messaging; each write overwrites its key, no history retained)
+
+------------------------------------------------------------------------------
+Unstr.-Blackboard MAS   (FR 0/1, UAA 1/1)
+
+  user           My PI is asking for a sustainability report on our Fugaku usage. What is the average energy 
+  sql_agent      SQL: WITH avg_energy AS ( SELECT pclass, AVG(econ) AS avg_energy_per_job FROM jobs WHERE avg
+  pa_agent       I ran a failure-risk prediction for: {'nnumr': 1, 'elpl': 3600.0, 'pclass': 'compute-bound'}
+  doc_agent      To monitor or record the actual power consumption of your jobs on Fugaku, use the `pjstat` c
+  synthesizer    To address your query regarding Fugaku usage and sustainability reporting: 1. **Average Ener
+  reflector      To address your query regarding Fugaku usage and sustainability reporting: 1. **Average Ener
+  (append-only free text; no directed messaging, no typed fields)
+
+------------------------------------------------------------------------------
+Single Agent   (FR 1/1, UAA 0/1)
+
+  -- iteration 1
+     CALL   profile_columns({'query': 'pclass econ nnuma elpl'})
+     RESULT Column profiles from the Fugaku jobs table: ec (BIGINT) nulls: 0 / 25866900 range: 0 → 2
+     CALL   rag_search({'query': 'pjstat power consumption or pjsub directive for energy'})
+     RESULT [1] 7. Power control function > 7.2. Power mode (Power knob operation at job submisson) 
+  -- iteration 2
+     CALL   run_sql({'sql': 'SELECT pclass, AVG(econ) AS avg_energy_per_job, AVG(econ / (nnuma)
+     RESULT pclass | avg_energy_per_job | avg_cost_per_node_hour -----------------------------------
+  -- iteration 3
+  (single context window; no inter-agent messages exist)
+
+
+==============================================================================
+N52: User profile and core-hour billing trap
+==============================================================================
+
+QUERY
+  User usr_2111 is one of the highest-volume submitters on the system. (a)
+  What is this user's overall failure rate and their most common job node
+  count? (b) What compute allocation budget — in core-hours or billing units
+  — has been charged to usr_2111 for their failed jobs across the entire
+  dataset? (c) Given this user's history, predict failure risk for a new job
+  from usr_2111 at 192 nodes with a 2-hour compute-bound workload.
+
+------------------------------------------------------------------------------
+Unstructured MAS   (FR 1/2, UAA 0/1)
+
+  user           User usr_2111 is one of the highest-volume submitters on the system. (a) What is this user's
+  pa_agent --> sql_agent   REQUEST  "Please query the node count distribution, walltime, job class distribution, overall
+  sql_agent --> pa_agent   RESPONSE SQL result: failure_rate | most_common_node_count | total_core_hours_failed_jobs | f
+  pa_agent       Prediction parameters used: {'nnumr': 192, 'elpl': 7200.0, 'pclass': 'compute-bound', 'usr':
+  synthesizer    (a) User `usr_2111` has an overall failure rate of **2.26%**. Their most common job node cou
+  reflector      (a) User `usr_2111` has an overall failure rate of **2.26%**. Their most common job node cou
+  (directed peer exchanges present; content is free text, no da_type)
+
+------------------------------------------------------------------------------
+Blackboard MAS   (FR 1/2, UAA 0/1)
+
+  orchestrator  ROUTE -> ['data_explorer', 'sql_agent', 'pa_agent']
+  data_explorer  WRITE explorer_result Column profiles from the Fugaku jobs table: usr (VARCHAR) nulls: 0 / 25866900 TYPE: CATE
+  sql_agent      WRITE sql_result     CANNOT ANSWER: Billing cost and prediction logic are not part of the schema.
+  pa_agent       WRITE pa_result      Risk level: OK Failure probability: 0.4% Expected runtime (if successful): 27.0 min Expe
+  synthesizer    WRITE synthesized    ### Response to User Query #### (a) Overall Failure Rate and Most Common Job Node Count 
+  reflector      WRITE final_answer   ### Response to User Query #### (a) Overall Failure Rate and Most Common Job Node Count 
+  (no peer messaging; each write overwrites its key, no history retained)
+
+------------------------------------------------------------------------------
+Unstr.-Blackboard MAS   (FR 1/2, UAA 0/1)
+
+  user           User usr_2111 is one of the highest-volume submitters on the system. (a) What is this user's
+  sql_agent      SQL: WITH user_stats AS ( SELECT ROUND(100.0 * SUM(CASE WHEN "exit state" = 'failed' THEN 1 
+  pa_agent       I ran a failure-risk prediction for: {'nnumr': 192, 'elpl': 7200.0, 'pclass': 'compute-bound
+  synthesizer    (a) User `usr_2111` has an overall failure rate of **2.26%**. The most common job node count
+  reflector      The answer is complete and accurate. No gaps exist. Final answer: (a) User `usr_2111` has an
+  (append-only free text; no directed messaging, no typed fields)
+
+------------------------------------------------------------------------------
+Single Agent   (FR 2/2, UAA 0/1)
+
+  -- iteration 1
+     CALL   profile_columns({'query': 'nnumr'})
+     RESULT Column profiles from the Fugaku jobs table: nnumr (BIGINT) nulls: 0 / 25866900 range: 1 
+     CALL   profile_columns({'query': 'exit state'})
+     RESULT Column profiles from the Fugaku jobs table: exit state (VARCHAR) nulls: 0 / 25866900 TYP
+  -- iteration 2
+     CALL   run_sql({'sql': 'SELECT COUNT(*) AS total_jobs, SUM(CASE WHEN "exit state" = \'fai)
+     RESULT total_jobs | failed_jobs | most_common_nnumr -------------------------------------------
+  -- iteration 3
+     CALL   run_sql({'sql': 'SELECT SUM(cnumr * elpl / 3600) AS core_hours_failed_jobs FROM jo)
+     RESULT core_hours_failed_jobs ---------------------- 19136248.0
+  -- iteration 4
+     CALL   predict_job({'nnumr': 192, 'elpl': 7200, 'pclass': 'compute-bound', 'usr': 'usr_2111'})
+     RESULT Risk level: OK Failure probability: 0.4% Expected runtime (if successful): 27.0 min Expe
+  -- iteration 5
+  (single context window; no inter-agent messages exist)
+
+
+==============================================================================
+N47: Year-over-year spike and thermal/OS kernel traps
+==============================================================================
+
+QUERY
+  Compute-bound jobs at 192 nodes showed a dramatic change between 2022 and
+  2023. (a) What were the exact failure rates for compute-bound 192-node
+  jobs in 2022 and in 2023? (b) Did elevated node operating temperatures or
+  changes in the OS kernel version contribute to the failure spike? What
+  thermal or system-level data supports this? (c) Predict failure risk for a
+  new compute-bound job at 192 nodes submitted today, accounting for any
+  thermal or kernel-level risk factors identified.
+
+------------------------------------------------------------------------------
+Unstructured MAS   (FR 0/2, UAA 2/2)
+
+  user           Compute-bound jobs at 192 nodes showed a dramatic change between 2022 and 2023. (a) What wer
+  data_explorer  Column profiles from the Fugaku jobs table: jid (VARCHAR) nulls: 0 / 25866900 TYPE: CATEGORI
+  pa_agent --> sql_agent   REQUEST  "Please query the node count, walltime, job class distribution, failure rates, node 
+  sql_agent --> pa_agent   RESPONSE This data is not available in the Fugaku jobs dataset: node operating temperatures a
+  pa_agent       Prediction parameters used: {'nnumr': 192, 'elpl': 14400.0, 'pclass': 'compute-bound'} Risk 
+  sql_agent      SQL: SELECT ROUND(100.0 * SUM(CASE WHEN "exit state" = 'failed' THEN 1 ELSE 0 END) / COUNT(*
+  doc_agent      No relevant documentation found for this query.
+  synthesizer    (a) The exact failure rates for compute-bound 192-node jobs were as follows: - In 2022: **12
+  reflector      (a) The exact failure rates for compute-bound 192-node jobs were as follows: - In 2022: **12
+  (directed peer exchanges present; content is free text, no da_type)
+
+------------------------------------------------------------------------------
+Blackboard MAS   (FR 0/2, UAA 2/2)
+
+  orchestrator  ROUTE -> ['data_explorer', 'sql_agent', 'pa_agent', 'doc_agent']
+  data_explorer  WRITE explorer_result Column profiles from the Fugaku jobs table: jid (VARCHAR) nulls: 0 / 25866900 TYPE: CATE
+  sql_agent      WRITE sql_result     CANNOT ANSWER: The schema does not include data on node operating temperatures, OS kerne
+  pa_agent       WRITE pa_result      Risk level: CAUTION Failure probability: 12.2% Expected runtime (if successful): 1.25 hr
+  doc_agent      WRITE doc_result     [Source: Return process end code. > 5.7.6. Impact when system failure > 5.7.6.2. Impact 
+  synthesizer    WRITE synthesized    ### Response to Query: #### (a) Failure Rates for Compute-Bound 192-Node Jobs in 2022 an
+  reflector      WRITE final_answer   ### Response to Query: #### (a) Failure Rates for Compute-Bound 192-Node Jobs in 2022 an
+  (no peer messaging; each write overwrites its key, no history retained)
+
+------------------------------------------------------------------------------
+Unstr.-Blackboard MAS   (FR 0/2, UAA 2/2)
+
+  user           Compute-bound jobs at 192 nodes showed a dramatic change between 2022 and 2023. (a) What wer
+  sql_agent      SQL: WITH failure_rates AS ( SELECT EXTRACT(YEAR FROM CAST(sdt AS TIMESTAMPTZ)) AS year, ROU
+  pa_agent       I ran a failure-risk prediction for: {'nnumr': 192, 'elpl': 3600.0, 'pclass': 'compute-bound
+  doc_agent      No relevant documentation found for this query.
+  synthesizer    (a) The exact failure rates for compute-bound jobs at 192 nodes in 2022 and 2023 are unavail
+  reflector      The answer provided is complete and accurate based on the conversation context. No additiona
+  (append-only free text; no directed messaging, no typed fields)
+
+------------------------------------------------------------------------------
+Single Agent   (FR 2/2, UAA 1/2)
+
+  -- iteration 1
+     CALL   run_sql({'sql': 'SELECT CAST(sdt AS TIMESTAMPTZ) AS start_date, "exit state", COUN)
+     RESULT start_date | exit state | job_count ----------------------------------- 2022-01-14 01:08
+     CALL   rag_search({'query': 'Did elevated node operating temperatures or OS kernel changes a)
+     RESULT [1] 2. System Configuration > 2.4. Software [2. System Configuration > 2.4. Software] ##
+  -- iteration 2
+     CALL   run_sql({'sql': 'SELECT "exit state", COUNT(*) AS job_count FROM jobs WHERE pclass)
+     RESULT exit state | job_count ---------------------- completed | 3665 failed | 186
+  -- iteration 3
+     CALL   run_sql({'sql': 'SELECT "exit state", COUNT(*) AS job_count FROM jobs WHERE pclass)
+     RESULT exit state | job_count ---------------------- failed | 789 completed | 1899
+  -- iteration 4
+     CALL   predict_job({'nnumr': 192, 'elpl': 3600, 'pclass': 'compute-bound'})
+     RESULT Risk level: OK Failure probability: 7.7% Expected runtime (if successful): 15.3 min Expe
+  -- iteration 5
+  (single context window; no inter-agent messages exist)
+
+
+==============================================================================
+N24: VQE benchmark and macOS watch trap
+==============================================================================
+
+QUERY
+  Our quantum computing research group is benchmarking variational quantum
+  eigensolver (VQE) algorithms on Fugaku using compute-bound jobs at exactly
+  576 nodes — each run is a full classical optimizer iteration. (a) How many
+  compute-bound jobs at exactly 576 nodes appear in the Fugaku historical
+  dataset, and what is their failure rate and average walltime? Are there
+  enough historical jobs at this exact scale for a high-confidence
+  prediction? (b) Using the 576-node statistics from (a), what failure
+  probability does the system predict for our next VQE run submitted under
+  our group account usr_vqe_lab (new to Fugaku)? Flag any data-confidence
+  issues explicitly. (c) I usually monitor long-running jobs on my Mac by
+  running 'watch -n 5 pjstat' in a terminal window — does this work on
+  Fugaku's login nodes, or do I need to use a different method to
+  periodically refresh job status?
+
+------------------------------------------------------------------------------
+Unstructured MAS   (FR 1/2, UAA 1/1)
+
+  user           Our quantum computing research group is benchmarking variational quantum eigensolver (VQE) a
+  pa_agent --> sql_agent   REQUEST  "Please query the node count, walltime, job class distribution, failure rate, and to
+  sql_agent --> pa_agent   RESPONSE SQL result: total_compute_bound_jobs | failure_rate | average_walltime -------------
+  pa_agent       Prediction parameters used: {'nnumr': 576, 'elpl': 14400.0, 'pclass': 'compute-bound', 'usr'
+  doc_agent      No relevant documentation found for this query.
+  synthesizer    (a) Based on the Fugaku historical dataset, there are **0 compute-bound jobs at exactly 576 
+  reflector      (a) Based on the Fugaku historical dataset, there are **0 compute-bound jobs at exactly 576 
+  (directed peer exchanges present; content is free text, no da_type)
+
+------------------------------------------------------------------------------
+Blackboard MAS   (FR 0/2, UAA 1/1)
+
+  orchestrator  ROUTE -> ['data_explorer', 'sql_agent', 'pa_agent', 'doc_agent']
+  sql_agent      WRITE sql_result     CANNOT ANSWER: Fugaku does not support quantum computing hardware, and the question invo
+  pa_agent       WRITE pa_result      Risk level: CAUTION Failure probability: 12.2% Expected runtime (if successful): 1.23 hr
+  doc_agent      WRITE doc_result     [Source: Supercomputer Fugaku Users Guide - Use and job execution - Version 1.49] [Super
+  synthesizer    WRITE synthesized    ### Response to User Query: #### (a) Historical Data on 576-Node Compute-Bound Jobs Base
+  reflector      WRITE final_answer   ### Response to User Query: #### (a) Historical Data on 576-Node Compute-Bound Jobs Base
+  (no peer messaging; each write overwrites its key, no history retained)
+
+------------------------------------------------------------------------------
+Unstr.-Blackboard MAS   (FR 2/2, UAA 1/1)
+
+  user           Our quantum computing research group is benchmarking variational quantum eigensolver (VQE) a
+  sql_agent      SQL: WITH compute_bound_576 AS ( SELECT COUNT(*) AS total_jobs, ROUND(100.0 * SUM(CASE WHEN 
+  pa_agent       I ran a failure-risk prediction for: {'nnumr': 576, 'elpl': 20307.068403908794, 'pclass': 'c
+  doc_agent      No relevant documentation found for this query.
+  synthesizer    (a) Based on the historical dataset for Fugaku, there are **614 compute-bound jobs** at exac
+  reflector      (a) Based on the historical dataset for Fugaku, there are **614 compute-bound jobs** at exac
+  (append-only free text; no directed messaging, no typed fields)
+
+------------------------------------------------------------------------------
+Single Agent   (FR 2/2, UAA 1/1)
+
+  -- iteration 1
+     CALL   profile_columns({'query': 'nnumr pclass exit state elpl'})
+     RESULT Column profiles from the Fugaku jobs table: nnumr (BIGINT) nulls: 0 / 25866900 range: 1 
+     CALL   rag_search({'query': 'pjstat usage on Fugaku login nodes'})
+     RESULT [1] 2.4.2 Compute Nodes [2.4.2 Compute Nodes] ## 2.4.2 Compute Nodes It is assumed that 
+  -- iteration 2
+     CALL   run_sql({'sql': 'SELECT COUNT(*) AS job_count, \n SUM(CASE WHEN "exit state" = \'f)
+     RESULT job_count | failure_rate | avg_walltime --------------------------------------- 614 | 15
+  -- iteration 3
+     CALL   predict_job({'nnumr': 576, 'elpl': 20307.068403908794, 'pclass': 'compute-bound', 'usr)
+     RESULT Risk level: OK Failure probability: 9.8% Expected runtime (if successful): 1.93 hr Expec
+  -- iteration 4
+  (single context window; no inter-agent messages exist)
+
+
+==============================================================================
+N26: CB vs. MB joint risk at 96 nodes
+==============================================================================
+
+QUERY
+  I am scaling CFD simulations on Fugaku to 96 nodes but have not decided
+  between compute-bound and memory-bound job configurations. Before
+  committing to either approach, I need a joint risk assessment for both.
+  (a) What is the historical failure rate for compute-bound jobs at exactly
+  96 nodes on Fugaku? Report the average walltime and — separately — the
+  average walltime of failed jobs only at that node count. (b) What is the
+  historical failure rate for memory-bound jobs at exactly 96 nodes on
+  Fugaku? Report the same statistics: average walltime for all jobs and the
+  average walltime of failed jobs. (c) Comparing (a) and (b): which
+  configuration carries higher failure risk at 96 nodes? Using the riskier
+  class's historical statistics, predict the failure probability for our
+  next 96-node job submitted by our new group account usr_cfd_lab (no prior
+  Fugaku history). (d) For 96-node jobs in the selected class, which rscgrp
+  should we specify in our pjsub script, and what are the relevant
+  submission directives?
+
+------------------------------------------------------------------------------
+Unstructured MAS   (FR 1/3)
+
+  user           I am scaling CFD simulations on Fugaku to 96 nodes but have not decided between compute-boun
+  data_explorer  Column profiles from the Fugaku jobs table: jid (VARCHAR) nulls: 0 / 25866900 TYPE: CATEGORI
+  pa_agent --> sql_agent   REQUEST  "Please query the historical failure rate, average walltime for all jobs, and averag
+  sql_agent --> pa_agent   RESPONSE SQL result: Query returned no results.
+  pa_agent       Prediction parameters used: {'nnumr': 96, 'elpl': 14400.0, 'pclass': 'compute-bound', 'usr':
+  sql_agent      SQL: -- (a) Historical failure rate, average walltime, and average walltime of failed comput
+  doc_agent      No relevant documentation found for this query.
+  synthesizer    ### Final Answer: #### (a) Historical failure rate, average walltime, and average walltime o
+  reflector      ### Final Answer: #### (a) Historical failure rate, average walltime, and average walltime o
+  (directed peer exchanges present; content is free text, no da_type)
+
+------------------------------------------------------------------------------
+Blackboard MAS   (FR 1/3)
+
+  orchestrator  ROUTE -> ['sql_agent', 'pa_agent', 'doc_agent']
+  sql_agent      WRITE sql_result     CANNOT ANSWER: rscgrp directives and submission script details are not part of the schem
+  pa_agent       WRITE pa_result      Risk level: CAUTION Failure probability: 12.2% Expected runtime (if successful): 55.0 mi
+  doc_agent      WRITE doc_result     [Source: 5.9. Job execution command options > 5.9.2. Resource specification > 5.9.2.2. L
+  synthesizer    WRITE synthesized    To address your query regarding scaling CFD simulations on Fugaku to 96 nodes, here is a
+  reflector      WRITE final_answer   To address your query regarding scaling CFD simulations on Fugaku to 96 nodes, here is a
+  (no peer messaging; each write overwrites its key, no history retained)
+
+------------------------------------------------------------------------------
+Unstr.-Blackboard MAS   (FR 3/3)
+
+  user           I am scaling CFD simulations on Fugaku to 96 nodes but have not decided between compute-boun
+  sql_agent      SQL: WITH compute_bound_stats AS ( SELECT ROUND(100.0 * SUM(CASE WHEN "exit state"='failed' 
+  pa_agent       I ran a failure-risk prediction for: {'nnumr': 96, 'elpl': 3600.0, 'pclass': 'compute-bound'
+  doc_agent      No relevant documentation found for this query.
+  synthesizer    Here is the complete response to your query: (a) **Historical failure rate for compute-bound
+  reflector      Here is the complete and accurate response to your query: --- (a) **Historical failure rate 
+  (append-only free text; no directed messaging, no typed fields)
+
+------------------------------------------------------------------------------
+Single Agent   (FR 3/3)
+
+  -- iteration 1
+     CALL   run_sql({'sql': 'SELECT pclass, COUNT(*) AS total_jobs, SUM(CASE WHEN "exit state")
+     RESULT pclass | total_jobs | failed_jobs | avg_walltime | avg_failed_walltime -----------------
+     CALL   rag_search({'query': 'What rscgrp should be specified in pjsub for 96-node jobs, and )
+     RESULT [1] 5.5. Interactive job > 5.5.1. Job submission [5.5. Interactive job > 5.5.1. Job subm
+  -- iteration 2
+     CALL   predict_job({'nnumr': 96, 'elpl': 28996.279578739508, 'pclass': 'memory-bound', 'usr':)
+     RESULT Risk level: OK Failure probability: 6.6% Expected runtime (if successful): 1.49 hr Expec
+  -- iteration 3
+  (single context window; no inter-agent messages exist)
+
+
+==============================================================================
+N41: CB 192-node 2023 spike (chain query)
+==============================================================================
+
+QUERY
+  Compute-bound jobs at exactly 192 nodes showed an unusual failure pattern
+  in 2023. (a) What was the exact failure rate for those jobs in 2023? (b)
+  What pjsub directives should a user specify when submitting a large-scale
+  compute-bound job at 192 nodes to maximize their success rate? (c) Given
+  this historical failure rate, predict the failure risk for a new
+  compute-bound job at 192 nodes requesting a 3-hour walltime.
+
+------------------------------------------------------------------------------
+Unstructured MAS   (FR 1/1)
+
+  user           Compute-bound jobs at exactly 192 nodes showed an unusual failure pattern in 2023. (a) What 
+  pa_agent --> sql_agent   REQUEST  "Please query the node count, walltime, job class distribution, and failure rates fo
+  sql_agent --> pa_agent   RESPONSE SQL result: failure_rate | avg_walltime | total_jobs | pclass ----------------------
+  pa_agent       Prediction parameters used: {'nnumr': 192, 'elpl': 10800.0, 'pclass': 'compute-bound'} Risk 
+  doc_agent      No relevant documentation found for this query.
+  synthesizer    (a) The exact failure rate for compute-bound jobs at exactly 192 nodes in 2023 was **29.35%*
+  reflector      (a) The exact failure rate for compute-bound jobs at exactly 192 nodes in 2023 was **29.35%*
+  (directed peer exchanges present; content is free text, no da_type)
+
+------------------------------------------------------------------------------
+Blackboard MAS   (FR 0/1)
+
+  orchestrator  ROUTE -> ['sql_agent', 'pa_agent', 'doc_agent']
+  sql_agent      WRITE sql_result     CANNOT ANSWER: The question about pjsub directives and predicting failure risk requires 
+  pa_agent       WRITE pa_result      Risk level: OK Failure probability: 6.6% Expected runtime (if successful): 52.9 min Expe
+  doc_agent      WRITE doc_result     [Source: 3. Usage rule > 3.4. Resource > 3.4.13. Definition of used computational resour
+  synthesizer    WRITE synthesized    ### Response to User Query: (a) **Exact Failure Rate for 192-Node Compute-Bound Jobs in 
+  reflector      WRITE final_answer   ### Response to User Query: (a) **Exact Failure Rate for 192-Node Compute-Bound Jobs in 
+  (no peer messaging; each write overwrites its key, no history retained)
+
+------------------------------------------------------------------------------
+Unstr.-Blackboard MAS   (FR 0/1)
+
+  user           Compute-bound jobs at exactly 192 nodes showed an unusual failure pattern in 2023. (a) What 
+  sql_agent      SQL: WITH failure_rate AS ( SELECT ROUND(100.0 * SUM(CASE WHEN "exit state" = 'failed' THEN 
+  pa_agent       I ran a failure-risk prediction for: {'nnumr': 192, 'elpl': 10800.0, 'pclass': 'compute-boun
+  doc_agent      No relevant documentation found for this query.
+  synthesizer    (a) The exact failure rate for compute-bound jobs at exactly 192 nodes in 2023 could not be 
+  reflector      (a) The exact failure rate for compute-bound jobs at exactly 192 nodes in 2023 could not be 
+  (append-only free text; no directed messaging, no typed fields)
+
+------------------------------------------------------------------------------
+Single Agent   (FR 1/1)
+
+  -- iteration 1
+     CALL   run_sql({'sql': 'SELECT COUNT(*) AS total_jobs, SUM(CASE WHEN "exit state" = \'fai)
+     RESULT total_jobs | failed_jobs | failure_rate --------------------------------------- 2688 | 7
+     CALL   rag_search({'query': 'pjsub directives for large-scale compute-bound jobs to maximize)
+     RESULT [1] 5.1. Overview > 5.1.3. Create job script [5.1. Overview > 5.1.3. Create job script] 
+     CALL   predict_job({'nnumr': 192, 'elpl': 10800, 'pclass': 'compute-bound'})
+     RESULT Risk level: OK Failure probability: 6.6% Expected runtime (if successful): 52.9 min Expe
+  -- iteration 2
+  (single context window; no inter-agent messages exist)
+
+
+==============================================================================
+N46: usr_1898 profile and institutional affiliation trap
+==============================================================================
+
+QUERY
+  User usr_1898 is the highest-volume submitter on the system. (a) What is
+  this user's overall failure rate, and what node count do they use most
+  frequently for compute-bound jobs? (b) Which research institution or
+  university is usr_1898 affiliated with, and what compute allocation
+  project funds their jobs? (c) Given their typical job configuration,
+  predict failure risk if usr_1898 submits a compute-bound job at their most
+  common node count with a 2-hour walltime.
+
+------------------------------------------------------------------------------
+Unstructured MAS   (FR 2/2, UAA 1/1)
+
+  user           User usr_1898 is the highest-volume submitter on the system. (a) What is this user's overall
+  data_explorer  Column profiles from the Fugaku jobs table: usr (VARCHAR) nulls: 0 / 25866900 TYPE: CATEGORI
+  pa_agent --> sql_agent   REQUEST  "Please query the node count distribution, walltime distribution, job class distribu
+  sql_agent --> pa_agent   RESPONSE SQL result: failure_rate | most_common_node_count_compute_bound | 'This data is not 
+  pa_agent       Prediction parameters used: {'nnumr': 1, 'elpl': 7200.0, 'pclass': 'compute-bound', 'usr': '
+  doc_agent      No relevant documentation found for this query.
+  synthesizer    (a) User `usr_1898` has an overall failure rate of **45.31%**. For compute-bound jobs, their
+  reflector      (a) User `usr_1898` has an overall failure rate of **45.31%**. For compute-bound jobs, their
+  (directed peer exchanges present; content is free text, no da_type)
+
+------------------------------------------------------------------------------
+Blackboard MAS   (FR 0/2, UAA 1/1)
+
+  orchestrator  ROUTE -> ['data_explorer', 'sql_agent', 'pa_agent', 'doc_agent']
+  data_explorer  WRITE explorer_result Column profiles from the Fugaku jobs table: usr (VARCHAR) nulls: 0 / 25866900 TYPE: CATE
+  sql_agent      WRITE sql_result     CANNOT ANSWER: The database schema does not contain information about research instituti
+  pa_agent       WRITE pa_result      Risk level: CAUTION Failure probability: 47.5% Expected runtime (if successful): 26.4 mi
+  doc_agent      WRITE doc_result     [Source: 3. Usage rule > 3.4. Resource > 3.4.5. Disk] [3. Usage rule > 3.4. Resource > 3
+  synthesizer    WRITE synthesized    ### Response to User Query #### (a) Overall Failure Rate and Most Frequent Node Count Us
+  reflector      WRITE final_answer   ### Response to User Query #### (a) Overall Failure Rate and Most Frequent Node Count Us
+  (no peer messaging; each write overwrites its key, no history retained)
+
+------------------------------------------------------------------------------
+Unstr.-Blackboard MAS   (FR 1/2, UAA 1/1)
+
+  user           User usr_1898 is the highest-volume submitter on the system. (a) What is this user's overall
+  sql_agent      Data not available in this dataset.
+  pa_agent       I ran a failure-risk prediction for: {'nnumr': 1, 'elpl': 7200.0, 'pclass': 'compute-bound',
+  doc_agent      No relevant documentation found for this query.
+  synthesizer    (a) The overall failure rate for user `usr_1898` is **data unavailable**, as no relevant inf
+  reflector      The answer provided is complete and accurate based on the conversation context. All numerica
+  (append-only free text; no directed messaging, no typed fields)
+
+------------------------------------------------------------------------------
+Single Agent   (FR 2/2, UAA 1/1)
+
+  -- iteration 1
+     CALL   run_sql({'sql': 'SELECT COUNT(*) AS total_jobs, SUM(CASE WHEN "exit state" = \'fai)
+     RESULT total_jobs | failed_jobs | failure_rate --------------------------------------- 1252185 
+     CALL   run_sql({'sql': "SELECT nnumr, COUNT(*) AS count FROM jobs WHERE usr = 'usr_1898' )
+     RESULT nnumr | count ------------- 1 | 1090765
+     CALL   rag_search({'query': 'What research institution or university is user usr_1898 affili)
+     RESULT [1] 5.1.5. Job allocation operation [5.1.5. Job allocation operation] ## 5.1.5. Job allo
+  -- iteration 2
+     CALL   predict_job({'nnumr': 1, 'elpl': 7200, 'pclass': 'compute-bound', 'usr': 'usr_1898'})
+     RESULT Risk level: CAUTION Failure probability: 46.9% Expected runtime (if successful): 43.3 mi
+  -- iteration 3
+  (single context window; no inter-agent messages exist)
+
