@@ -2,7 +2,7 @@
 #
 #   make setup      one-time: virtualenv + dependencies
 #   make check      verify credentials, dataset and model artifacts are reachable
-#   make run-all    run all five configurations (sequential, ~3h)
+#   make run-all    run all five configurations (sequential, ~72 min measured)
 #   make score      score every run log into results/json/
 #   make tables     build results/tables/ from the scored JSON
 #   make traces     build results/traces/ per-query execution traces
@@ -11,8 +11,9 @@
 # Individual configurations, if you want them one at a time:
 #   make mas   make unmas   make bb   make unbb   make sa
 #
-# Each configuration is ~40 minutes. They are independent, so
-# `make run-parallel` starts all five at once if your rate limit allows it.
+# Measured per configuration: MAS 23.6min, UNMAS 17.6, BB 11.5, UNBB 12.6,
+# SA 6.8. They are independent, so run-parallel finishes in ~25 min if your
+# API rate limit allows five concurrent streams.
 
 PY      := .venv/bin/python
 PIP     := .venv/bin/pip

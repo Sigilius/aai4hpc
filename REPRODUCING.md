@@ -1,8 +1,16 @@
 # Reproducing the results
 
 Five agent configurations, 55 multi-intent queries, scored deterministically
-against the Fugaku job telemetry export. End to end this is about three hours
-sequential, forty minutes if you run the configurations in parallel.
+against the Fugaku job telemetry export. Measured end to end: **72 minutes**
+sequential, about **25 minutes** if you run the configurations in parallel.
+
+| Configuration | Wall-clock, 55 queries | Median per query |
+|---|---|---|
+| Structured MAS | 23.6 min | 23.7 s |
+| Unstructured MAS | 17.6 min | 19.2 s |
+| Blackboard MAS | 11.5 min | 12.2 s |
+| Unstructured-Blackboard MAS | 12.6 min | 12.7 s |
+| Single Agent | 6.8 min | 6.9 s |
 
 ---
 
@@ -20,8 +28,10 @@ licensed, or secret.
 Without the telemetry the SQL agent falls back to a small sample database and
 every fact-recall number will be wrong. `make check` catches that case.
 
-Documentation retrieval needs nothing extra — it uses BM25 over cached numpy
-embeddings, so there is no vector database to stand up.
+Documentation retrieval needs no vector database — it is BM25 over cached numpy
+embeddings — but it does need two asset files, `data/doc_embeddings.npy` and the
+chunked manual corpus. Without them DocAgent fails and every documentation
+sub-question silently scores zero.
 
 ## 2. Setup
 
@@ -34,7 +44,7 @@ make check                 # verifies data, models and the LLM endpoint
 `make check` is worth running. It confirms the jobs table has more than a
 million rows (so you are on the real export, not the sample), loads the
 predictor, and makes one live LLM call. It exits non-zero on any failure rather
-than letting a three-hour run fail at query 40.
+than letting a long run fail at query 40.
 
 Dependency versions are pinned because the predictor artifacts are pickled
 sklearn and LightGBM models; a different major version will not unpickle.
@@ -42,8 +52,8 @@ sklearn and LightGBM models; a different major version will not unpickle.
 ## 3. Run
 
 ```bash
-make run-all               # all five, sequential, ~3h
-make run-parallel          # all five at once, ~40min, needs rate-limit headroom
+make run-all               # all five, sequential, ~72 min
+make run-parallel          # all five at once, ~25 min, needs rate-limit headroom
 ```
 
 Or one at a time:

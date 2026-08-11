@@ -1,0 +1,463 @@
+================================================================================
+ANSWERS FOR THE [TODO] ITEMS IN THE AD/AE APPENDIX
+AgenticAI4HPC_at_SC_2026_w_ADAE.pdf
+================================================================================
+
+Every figure below is measured from the runs in this repository, not estimated.
+Where a value cannot be derived from the artifact (an external download URL, a
+hosted model snapshot version), the item is marked NEEDS AUTHOR INPUT with
+instructions for obtaining it. Nothing here is invented.
+
+Per the SC25 guidelines: paste the answer text only. Do not add author names or
+affiliations, do not alter the template structure, ensure \usetag{explanation}
+and \usetag{example} stay commented out, and make sure no blue text survives.
+
+--------------------------------------------------------------------------------
+SECTION 1.2 — COMPUTATIONAL ARTIFACTS: DOI/URL  (TODOs 1-3)
+--------------------------------------------------------------------------------
+
+All three artifacts live in one repository, so one URL covers them. The
+guidelines explicitly permit a repository URL at AD stage with a DOI to follow.
+
+A1 (EPIQ Benchmark):
+  https://github.com/Sigilius/aai4hpc — DOI to follow upon acceptance.
+  Queries and ground truth: tests/query_bank.py, tests/score_metrics.py.
+
+A2 (Agentic System Implementations):
+  https://github.com/Sigilius/aai4hpc — same repository; DOI to follow upon
+  acceptance. Agents: agents/. Configurations: research/.
+
+A3 (Evaluation and Statistical Analysis Pipeline):
+  https://github.com/Sigilius/aai4hpc — bundled with A1 and A2 in the same
+  repository; DOI to follow upon acceptance. Scoring: score_run.py,
+  score_all.py. Tables and figures: build_results_sheet.py.
+
+--------------------------------------------------------------------------------
+TODO 4 — A1 EXPECTED REPRODUCTION TIME
+--------------------------------------------------------------------------------
+
+Artifact Setup: 10-15 min. Cloning the repository and installing pinned
+dependencies takes ~2 min (`make setup`). The remainder is materialising the
+DuckDB view over the F-data parquet export, which is a one-line view creation
+rather than a load — DuckDB reads the parquet files in place — so the cost is
+disk residency of the export (~26 GB), not import time.
+
+Artifact Execution: <1 min. The 119 fact-checkers and 25 trap-checkers are
+string and numeric comparisons over already-logged answers; no LLM calls are
+involved. Scoring all five configurations end to end took 34 s wall-clock.
+
+Artifact Analysis: <1 min. Aggregating per-query scores into the FR/UAA tables
+is pure arithmetic (`make tables`).
+
+--------------------------------------------------------------------------------
+TODO 5 — F-DATA DOWNLOAD URL/DOI                       [NEEDS AUTHOR INPUT]
+--------------------------------------------------------------------------------
+
+The runs used a local parquet export (38 monthly files, Mar 2021 - Apr 2024,
+25,866,900 rows) whose provenance is not recorded in the repository, so the
+download URL cannot be recovered from the artifact.
+
+Supply the DOI from the dataset publication already cited in the appendix:
+Antici et al., Scientific Data 12, 1321 (2025). Take the DOI from that paper's
+Data Availability statement and paste it here. Do not cite a mirror.
+
+Verification the reviewer's copy matches ours — `make check` asserts it:
+  total rows        25,866,900
+  failed jobs        2,558,519
+  memory-bound fail      9.38 %
+  compute-bound fail    10.74 %
+  distinct users         3,457
+
+--------------------------------------------------------------------------------
+TODO 6 — FUGAKU MANUAL CORPUS URL                      [NEEDS AUTHOR INPUT]
+--------------------------------------------------------------------------------
+
+DocAgent retrieves over 14 Fugaku user guides and system manuals (job execution,
+language and development environment, Spack, Singularity, S3, VPN, Open
+OnDemand, VeloC, pre/post environment, user support tools). These are published
+by RIKEN R-CCS on the public Fugaku user portal; they are not RIKEN-internal.
+
+Two things to state: the portal URL you downloaded from, and whether the
+retrieval corpus itself is redistributable. If it is, ship it — see the note on
+doc assets under TODO 11, since DocAgent cannot run without it.
+
+--------------------------------------------------------------------------------
+TODO 7 — A1 INSTALLATION AND DEPLOYMENT
+--------------------------------------------------------------------------------
+
+  git clone https://github.com/Sigilius/aai4hpc && cd aai4hpc
+  make setup                     # virtualenv + pinned dependencies
+  cp .env.example .env           # set FUGAKU_DATA_PATH to the parquet export
+  make check                     # verifies row counts and reference statistics
+
+No import step is required. shared/db.py creates a DuckDB view directly over
+`$FUGAKU_DATA_PATH/*.parquet`, so the 25.8M-row table is queryable without
+materialising a database file. `make check` fails loudly if the jobs table has
+fewer than one million rows, which is the signature of the bundled sample
+database being picked up instead of the real export — a failure mode that is
+otherwise silent and corrupts every fact-recall number.
+
+--------------------------------------------------------------------------------
+TODO 8 — A2 EXPECTED REPRODUCTION TIME
+--------------------------------------------------------------------------------
+
+Artifact Setup: 15-20 min, as for A1 plus API credential configuration.
+
+Artifact Execution: measured wall-clock for all 55 queries, per configuration:
+
+  Structured MAS            23.6 min   (median 23.7 s/query)
+  Unstructured MAS          17.6 min   (median 19.2 s/query)
+  Blackboard MAS            11.5 min   (median 12.2 s/query)
+  Unstr.-Blackboard MAS     12.6 min   (median 12.7 s/query)
+  Single Agent               6.8 min   (median  6.9 s/query)
+  -------------------------------------------------------------
+  all five, sequential      72.1 min
+
+Running the five concurrently (`make run-parallel`) completes in roughly the
+time of the slowest, ~25 min, if the API rate limit allows five concurrent
+streams. Latency is dominated by hosted API round-trips, so these figures scale
+with endpoint load rather than local hardware.
+
+Artifact Analysis: handed to A3, <5 min.
+
+Total for a reviewer reproducing every configuration from scratch: well under
+two hours, inside the 8-hour evaluation budget.
+
+--------------------------------------------------------------------------------
+TODO 9 — A2 HARDWARE
+--------------------------------------------------------------------------------
+
+No specific machine or cluster node is required, and none of the reported
+results depend on the orchestration host.
+
+The experiments ran on a commodity Linux workstation (x86-64, Linux 6.8,
+Python 3.10.12) with no GPU — the code sets CUDA_VISIBLE_DEVICES="" explicitly.
+All model inference happens at a hosted API endpoint; local computation is
+limited to DuckDB aggregation over the parquet export and LightGBM inference for
+PAAgent, both CPU-only. Requirements are sufficient disk for the F-data export
+(~26 GB) plus ~570 MB for the predictor artifacts, and ordinary network access.
+
+Wall-clock timings will vary with API latency and rate limits, not with the
+orchestration host.
+
+--------------------------------------------------------------------------------
+TODO 10 — MODEL SNAPSHOT VERSION                       [NEEDS AUTHOR INPUT]
+--------------------------------------------------------------------------------
+
+Confirmed: the codebase pins no dated snapshot. config.py sets MODEL = "gpt-4o"
+and every call passes that bare alias to an Azure AI Foundry project endpoint.
+The served snapshot is a property of the Azure deployment, not of the code, so
+it cannot be recovered from the artifact.
+
+Retrieve it from the Azure portal — the deployment's "Model version" field for
+the gpt-4o deployment used (e.g. 2024-08-06) — and record it here together with
+the date range over which the runs executed. State plainly that the alias alone
+does not pin behaviour and that results may shift if the underlying snapshot is
+updated.
+
+Two model tiers are used and both need recording. Structured MAS routes ~77% of
+its calls (709 of 921 in one measured run) to gpt-4o-mini for extraction and
+delegation gates, reserving gpt-4o for SQL generation, documentation synthesis
+and final synthesis. The reported Structured MAS configuration overrides this so
+that every call uses gpt-4o (MAS_FORCE_MODEL=gpt-4o, set in the Makefile). The
+baselines are single-tier gpt-4o throughout. Reviewers who omit that flag will
+reproduce a different, cheaper configuration.
+
+--------------------------------------------------------------------------------
+TODO 11 — SHIP MODEL ARTIFACTS OR TRAINING SCRIPTS?
+--------------------------------------------------------------------------------
+
+Recommendation: ship the artifacts, minus one file.
+
+Measured sizes:
+  jnam_emb.pkl                534 MB   job-name embedding lookup
+  s3_runtime_completed.pkl     16 MB
+  s4_energy.pkl                10 MB
+  s2_failcost.pkl             3.4 MB
+  s1_failure.pkl              2.7 MB
+  calibrators + 4 JSON + user_stats.parquet   < 1 MB
+  embedding_pca.pkl (PREPARED_PATH)          205 KB
+  -------------------------------------------------
+  total                       569 MB
+
+Everything except jnam_emb.pkl comes to ~33 MB and fits a GitHub release asset
+comfortably. jnam_emb.pkl alone exceeds GitHub's 100 MB per-file limit and needs
+Git LFS, a Zenodo deposit, or exclusion.
+
+Retraining is not a practical substitute: the training extract is ~20M Fugaku
+jobs, so "retrain from scratch" would impose a far larger burden than the 8-hour
+evaluation budget allows.
+
+ALSO REQUIRED, AND CURRENTLY MISSING FROM THE REPOSITORY: DocAgent's retrieval
+assets — data/doc_embeddings.npy (5.7 MB, currently excluded by the *.npy
+gitignore rule) and the chunked manual corpus all_chunks.json (1.6 MB). Without
+these DocAgent fails and every documentation sub-question silently scores zero.
+At 7.3 MB combined they belong in the repository directly.
+
+--------------------------------------------------------------------------------
+TODO 12 — A2 INSTALLATION AND DEPLOYMENT
+--------------------------------------------------------------------------------
+
+  git clone https://github.com/Sigilius/aai4hpc && cd aai4hpc
+  make setup
+  cp .env.example .env
+
+.env supplies five values: AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT for
+the LLM; FUGAKU_DATA_PATH for the A1 parquet export; MODELS_PATH and
+PREPARED_PATH for the PAAgent artifacts. .env is gitignored, so the key is never
+committed.
+
+DocAgent needs no separate service — retrieval is BM25 over cached numpy
+embeddings, with no vector database to deploy — but it does need the two asset
+files noted under TODO 11 present under data/.
+
+  make check     # verifies telemetry row counts, predictor load, and one live
+                 # LLM call, and exits non-zero before any long run begins
+
+--------------------------------------------------------------------------------
+TODO 13 — A3 EXPECTED REPRODUCTION TIME
+--------------------------------------------------------------------------------
+
+Artifact Setup: <1 min. Dependencies are already installed by `make setup`; this
+stage adds nothing beyond numpy, scipy and pandas.
+
+Artifact Execution: measured 34 s to score all five configurations
+(275 query-configuration pairs) with `make score`. Bootstrap resampling at
+20,000 replicates per metric plus the pairwise Wilcoxon tests adds an estimated
+<10 min on a single core.
+
+Artifact Analysis: <1 min to render the tables (`make tables`).
+
+No LLM calls occur at this stage, so timings are deterministic and independent
+of API latency.
+
+--------------------------------------------------------------------------------
+TODO 14 — BUNDLE THE REFERENCE LOGS?
+--------------------------------------------------------------------------------
+
+Yes, and they are already bundled. results/json/ contains one scored file per
+configuration, each carrying all 55 queries with the full free-text answer,
+per-fact and per-trap scores, and the aggregate. results/traces/ holds per-query
+execution traces for the queries analysed in the appendix.
+
+This lets a reviewer verify the entire scoring and statistics pipeline with no
+API key, no cost, and no exposure to run-to-run non-determinism — reducing the
+minimum reproduction path to a few minutes of CPU.
+
+Note for the appendix text: the currently bundled logs predate a change that
+gave every configuration the same specialist agent implementations. Either
+regenerate them before submission or state the discrepancy; results/README.md
+records it.
+
+--------------------------------------------------------------------------------
+TODO 15 — A3 INSTALLATION AND DEPLOYMENT
+--------------------------------------------------------------------------------
+
+  make setup                 # or: pip install -r requirements.txt
+  make score                 # logs/ -> results/json/, all five configurations
+  make tables                # results/json/ -> results/tables/
+
+make tables writes results_tables.xlsx plus one CSV per sheet: FR/UAA
+(Table III), turn-and-cost (Table VI), trap subtype (Table IV) and the
+dialogue-act composition (Table VII).
+
+================================================================================
+ARTIFACT EVALUATION (AE) — SECTION 3
+================================================================================
+
+--------------------------------------------------------------------------------
+TODO 16 — 3.1 A1 ARTIFACT SETUP (literal commands)
+--------------------------------------------------------------------------------
+
+  git clone https://github.com/Sigilius/aai4hpc
+  cd aai4hpc
+  make setup
+  cp .env.example .env
+  # set FUGAKU_DATA_PATH to the directory holding the F-data parquet export
+  make check
+
+make check queries the telemetry and asserts the reference statistics listed
+under TODO 5. It exits non-zero if the export is missing or if the sample
+database has been picked up instead.
+
+--------------------------------------------------------------------------------
+TODO 17 — 3.1 A1 ARTIFACT EXECUTION (literal commands)
+--------------------------------------------------------------------------------
+
+  python3 score_run.py logs/metered_mas.log "Structured MAS" \
+          results/json/mas.json --mas
+
+Runs all 119 fact-checkers and 25 trap-checkers against one configuration's
+logged answers and writes the scored JSON. --mas additionally retains the
+dialogue-act trace, which only the typed configuration emits.
+
+  make score
+
+Does the same for all five configurations at once, reading the standard log
+names and writing results/json/.
+
+Each checker extracts a numeric value or categorical string from the free-text
+answer and compares it to database-derived ground truth within a fixed
+tolerance (±5-10% relative for failure rates, ±20% for energy, exact match for
+categorical conclusions). Trap checkers award a point only for an explicit
+refusal, and award zero if any value for the absent quantity appears.
+
+--------------------------------------------------------------------------------
+TODO 18 — 3.1 A1 ARTIFACT ANALYSIS (what the reviewer should see)
+--------------------------------------------------------------------------------
+
+score_run.py prints a per-configuration summary and writes per-fact and
+per-trap scores into results/json/<config>.json. The aggregate block of that
+file should match the corresponding row of Table III to within rounding.
+
+Scoring the bundled reference logs must reproduce the paper's numbers exactly,
+since the checkers are deterministic and the answers are fixed. Any discrepancy
+indicates a checker or environment problem, not sampling variance.
+
+One implementation detail a reviewer may notice: score_query() calls unwrap()
+before matching. Answers are printed through textwrap.fill(..., 72), and the
+checkers match literal phrases, so a refusal that happens to wrap mid-phrase
+("...is not\navailable in the dataset") scored zero before this was corrected.
+The bias only ever converted correct answers into misses.
+
+--------------------------------------------------------------------------------
+TODO 19 — 3.2 A2 ARTIFACT SETUP (incl. supplying an API key safely)
+--------------------------------------------------------------------------------
+
+  git clone https://github.com/Sigilius/aai4hpc && cd aai4hpc
+  make setup
+  cp .env.example .env
+
+Then edit .env:
+
+  AZURE_OPENAI_API_KEY=<reviewer's own key>
+  AZURE_OPENAI_ENDPOINT=<reviewer's own endpoint>
+  FUGAKU_DATA_PATH=/path/to/fdata/parquet
+  MODELS_PATH=/path/to/models/
+  PREPARED_PATH=/path/to/prepared/
+
+.env is listed in .gitignore, so a key placed there cannot be committed. The
+repository ships .env.example with empty placeholders and no credentials. No key
+appears anywhere in the tracked tree.
+
+  make check     # confirms the endpoint answers before any long run starts
+
+--------------------------------------------------------------------------------
+TODO 20 — 3.2 A2 ARTIFACT EXECUTION (literal command + measured duration)
+--------------------------------------------------------------------------------
+
+One configuration end to end over all 55 queries:
+
+  make mas       # Structured MAS          measured 23.6 min
+  make unmas     # Unstructured MAS        measured 17.6 min
+  make bb        # Blackboard MAS          measured 11.5 min
+  make unbb      # Unstructured-Blackboard measured 12.6 min
+  make sa        # Single Agent            measured  6.8 min
+
+All five:
+
+  make run-all       # sequential, measured 72.1 min total
+  make run-parallel  # concurrent, ~25 min if the rate limit permits
+
+Equivalent without make: ./run.sh, ./run.sh --parallel, or ./run.sh mas unmas
+for a subset. run.sh runs make check first and refuses to start otherwise.
+
+The make mas target sets MAS_FORCE_MODEL=gpt-4o. This is required: without it
+the configuration routes ~77% of its calls to gpt-4o-mini and reproduces
+different numbers.
+
+--------------------------------------------------------------------------------
+TODO 21 — 3.2 A2 ARTIFACT ANALYSIS (where logs land, how to spot-check)
+--------------------------------------------------------------------------------
+
+Each run writes two files:
+  logs/metered_<config>.log      full transcript: query, agent messages, answer,
+                                 per-query wall-clock
+  logs/usage_<config>.jsonl      per query: LLM calls, tokens (prompt,
+                                 completion, total), turns, model mix
+
+Spot-checks against the paper's qualitative claims:
+
+  N46 (institutional affiliation trap) — Structured MAS refuses explicitly
+  ("The Fugaku dataset does not contain information about user affiliations")
+  while recovering both facts. Single Agent hedges or omits rather than
+  refusing.
+
+  N52 (core-hour billing trap) — Structured MAS recovers usr_2111's 2.26%
+  failure rate and refuses the billing sub-question. Unstructured MAS drifts the
+  rate under free-text relay and fabricates a core-hour figure.
+
+  Grep the model mix to confirm the tier override took effect:
+    python3 -c "import json,collections; c=collections.Counter(); \
+    [c.update(json.loads(l)['models']) for l in open('logs/usage_mas.jsonl')]; \
+    print(c)"
+  With MAS_FORCE_MODEL=gpt-4o this prints gpt-4o only. Any gpt-4o-mini entries
+  mean the flag was not applied.
+
+--------------------------------------------------------------------------------
+TODO 22 — 3.3 A3 ARTIFACT SETUP
+--------------------------------------------------------------------------------
+
+  make setup        # or: pip install -r requirements.txt
+
+No credentials and no dataset access are needed for this stage. A3 consumes the
+logs produced by A2, or the reference logs bundled in results/json/, and makes
+no LLM calls.
+
+--------------------------------------------------------------------------------
+TODO 23 — 3.3 A3 ARTIFACT EXECUTION (literal command for Table III)
+--------------------------------------------------------------------------------
+
+  make score       # logs/ -> results/json/     (measured 34 s, five configs)
+  make tables      # results/json/ -> results/tables/
+
+Table III is results/tables/fr_uaa.csv, and the FR_UAA sheet of
+results/tables/results_tables.xlsx. The same invocation also produces the
+turn-and-cost table, the trap-subtype breakdown and the dialogue-act
+composition.
+
+To reproduce Table III from the bundled reference logs without re-running any
+configuration, skip make score and run make tables directly.
+
+--------------------------------------------------------------------------------
+TODO 24 — 3.3 A3 ARTIFACT ANALYSIS (expected numbers and tolerance)
+--------------------------------------------------------------------------------
+
+Scoring the bundled reference logs reproduces these exactly — the checkers are
+deterministic and the answers are fixed, so there is no tolerance to allow:
+
+  Configuration              FR                UAA
+  Structured MAS             78.2% (93/119)    92.0% (23/25)
+  Unstructured MAS           60.5% (72/119)    80.0% (20/25)
+  Blackboard MAS             36.1% (43/119)    60.0% (15/25)
+  Unstr.-Blackboard MAS      45.4% (54/119)    72.0% (18/25)
+  Single Agent               84.9% (101/119)   32.0% (8/25)
+
+Cost ratios, Structured MAS against Single Agent:
+  tokens   2.52x     (33,137 vs 13,135 per query)
+  calls    6.61x     (20.9 vs 3.2 per query)
+  latency  3.43x     (23.7 s vs 6.9 s median)
+  Blackboard MAS runs at 45% of Single Agent's token cost while declining more
+  unanswerable sub-questions (15/25 against 8/25).
+
+FROM FRESHLY GENERATED LOGS, expect variation. Across repeated Structured MAS
+runs of identical code we measured FR spanning 82-93 of 119 and UAA 22-23 of 25.
+A single fresh run is one sample: for any comparison turning on a few facts or
+traps, run three times and report a mean with the spread. The qualitative
+claims — Single Agent highest on FR and lowest on UAA, Structured MAS highest on
+UAA, both blackboard configurations Pareto-dominated by Structured MAS — held
+across every run we performed.
+
+================================================================================
+ITEMS REQUIRING AUTHOR INPUT BEFORE SUBMISSION
+================================================================================
+
+1. TODO 5  — F-data DOI, from Antici et al., Scientific Data 12, 1321 (2025).
+2. TODO 6  — Fugaku manual portal URL, and whether the corpus is redistributable.
+3. TODO 10 — the Azure deployment's gpt-4o model version, plus the run date range.
+4. TODO 11 — decision on hosting jnam_emb.pkl (534 MB, over GitHub's file limit).
+5. DocAgent's retrieval assets are missing from the repository (7.3 MB); without
+   them documentation sub-questions silently score zero.
+6. The bundled reference logs predate the shared-agent change; regenerate them
+   or state the discrepancy in the appendix.
+================================================================================
