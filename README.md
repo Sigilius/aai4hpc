@@ -1,8 +1,9 @@
 # AAI4HPC — Multi-Agent Architectures for HPC Operational Analytics
 
 Code and results for the biaxial ablation over agent-to-agent communication
-structure and shared-state organisation, evaluated on 55 multi-intent queries
-against the Fugaku job telemetry export (25.8M records).
+structure and shared-state organisation, evaluated on **EPIQ**
+([`tests/query_bank.py`](tests/query_bank.py)), 55 multi-intent queries against
+the Fugaku job telemetry export (25.8M records).
 
 ## Configurations
 
@@ -32,11 +33,19 @@ agents/            MAS specialist agents (shared by every configuration)
 core/              typed message schema, causally-ordered shared log
 research/          the four baseline configurations
 research/shared/   mas_agents.py, data_explorer.py, usage_meter.py
-tests/             benchmark runners and the ground-truth checkers
+tests/             EPIQ benchmark (query_bank.py) and the ground-truth checkers
 results/json/      per-query scored output, one file per configuration
 results/traces/    per-query execution traces (Appendix E format)
 results/tables/    FR/UAA, turn-and-cost, trap-subtype, DA distribution
 ```
+
+## EPIQ
+
+EPIQ is the 55-query benchmark this repo evaluates against: **[`tests/query_bank.py`](tests/query_bank.py)**
+holds the query text, IDs, and the independent/chain split (40 + 15); the
+ground-truth values and checker functions that grade the 119 facts and 25
+traps are in **[`tests/score_metrics.py`](tests/score_metrics.py)**. Both are
+evaluation-only — no component is trained or tuned on them.
 
 ## Metrics
 
